@@ -51,6 +51,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewId, setViewId] = useState(null);
+  const [spFilter, setSpFilter] = useState('');
 
   useEffect(() => { refresh(); }, []);
 
@@ -76,7 +77,16 @@ const Dashboard = () => {
     await deleteProforma(id); refresh();
   };
 
-  const totalGst = invoices.reduce((s, i) => s + (i.totals?.total || 0), 0);
+  const salespersons = useMemo(() => {
+    const names = invoices.map(i => i.salesperson?.name?.trim()).filter(Boolean);
+    return [...new Set(names)].sort();
+  }, [invoices]);
+
+  const filteredInvoices = useMemo(() =>
+    spFilter ? invoices.filter(i => i.salesperson?.name?.trim() === spFilter) : invoices
+  , [invoices, spFilter]);
+
+  const totalGst = filteredInvoices.reduce((s, i) => s + (i.totals?.total || 0), 0);
   const totalPro = proformas.reduce((s, p) => s + (p.totals?.rounded || 0), 0);
 
   return (
@@ -111,11 +121,29 @@ const Dashboard = () => {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <StatCard label="GST Quotations" value={invoices.length} color="text-indigo-600" />
+        <StatCard label={spFilter ? `${spFilter}'s Quotations` : 'GST Quotations'} value={filteredInvoices.length} color="text-indigo-600" />
         <StatCard label="Proforma Invoices" value={proformas.length} color="text-gray-800" />
-        <StatCard label="GST Total" value={`₹${inr(totalGst)}`} color="text-green-600" />
+        <StatCard label={spFilter ? `${spFilter}'s Total` : 'GST Total'} value={`₹${inr(totalGst)}`} color="text-green-600" />
         <StatCard label="Proforma Total" value={`₹${inr(totalPro)}`} color="text-blue-600" />
       </div>
+
+      {/* Salesperson filter */}
+      {salespersons.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <label className="text-sm font-medium text-gray-600 shrink-0">Salesperson:</label>
+          <select
+            value={spFilter}
+            onChange={e => setSpFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+          >
+            <option value="">All</option>
+            {salespersons.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          {spFilter && (
+            <button onClick={() => setSpFilter('')} className="text-xs text-indigo-600 hover:underline">Clear</button>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-gray-200 p-1 rounded-lg w-fit">
@@ -138,7 +166,7 @@ const Dashboard = () => {
           <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : tab === 'gst-invoice' ? (
-        invoices.length === 0 ? (
+        filteredInvoices.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-20 gap-3">
             <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <p className="text-gray-400 text-sm">No GST quotations yet.</p>
@@ -151,16 +179,18 @@ const Dashboard = () => {
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Quotation No.</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Buyer</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Salesperson</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Date</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600">Total</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {invoices.map((inv) => (
+                {filteredInvoices.map((inv) => (
                   <tr key={inv._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-semibold text-gray-800">{inv.meta?.invoiceNo || '—'}</td>
                     <td className="px-4 py-3 text-gray-700">{inv.buyer?.name || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{inv.salesperson?.name || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{inv.meta?.date || '—'}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800">
                       {inv.totals?.total != null ? `₹${Number(inv.totals.total).toLocaleString('en-IN')}` : '—'}
