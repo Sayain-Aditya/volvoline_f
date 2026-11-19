@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getInvoice, saveInvoice, updateInvoice, getNextInvoiceNumber } from "../../api/invoiceApi";
+import { getProducts } from "../../api/productApi";
 import mksLogo from "../../assets/MKS Logo (1).png";
 import volvlineLogo from "../../assets/volvline.jpg";
 
@@ -110,7 +111,57 @@ const PartyForm = ({ value, onChange, withContact }) => (
   </div>
 );
 
-export default function InvoiceSplitView({ initialData }) {
+const ItemDescSearch = ({ value, onChange, onSelect }) => {
+  const [query, setQuery] = useState(value);
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return; }
+    const t = setTimeout(() => {
+      getProducts(query).then(setResults).catch(() => setResults([]));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        className={inputCls}
+        value={query}
+        placeholder="Type to search products…"
+        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+      />
+      {open && results.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {results.map(p => (
+            <li key={p._id}
+              onMouseDown={() => { onSelect(p); setQuery(p.name); setOpen(false); }}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-indigo-50 flex justify-between items-center gap-2">
+              <div>
+                <div className="font-medium text-zinc-800">{p.name}</div>
+                {p.desc && <div className="text-xs text-zinc-400">{p.desc}</div>}
+              </div>
+              <div className="text-xs text-zinc-500 shrink-0">₹{Number(p.rate).toLocaleString('en-IN')} / {p.unit}</div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+export default function InvoiceSplitView({ initialData } = {}) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState(() => {
@@ -329,7 +380,11 @@ export default function InvoiceSplitView({ initialData }) {
                   </div>
                   <div className="grid grid-cols-6 gap-2">
                     <Field label="Description" className="col-span-4">
-                      <input className={inputCls} value={it.desc} onChange={(e) => setItem(it.id, { desc: e.target.value })} />
+                      <ItemDescSearch
+                        value={it.desc}
+                        onChange={(val) => setItem(it.id, { desc: val })}
+                        onSelect={(p) => setItem(it.id, { desc: p.name, hsn: p.hsn, unit: p.unit, rate: p.rate })}
+                      />
                     </Field>
                     <Field label="HSN/SAC" className="col-span-2">
                       <input className={inputCls} value={it.hsn} onChange={(e) => setItem(it.id, { hsn: e.target.value })} />

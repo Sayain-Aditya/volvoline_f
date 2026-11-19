@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import Dashboard from './pages/Dashboard';
 import NewInvoice from './pages/NewInvoice';
 import EditInvoice from './pages/EditInvoice';
+import Products from './pages/Products';
 import InvoiceSplitView from './components/proforma/InvoiceSplitView';
 import GstInvoiceSplitView from './components/invoice/InvoiceSplitView';
 
@@ -10,6 +11,11 @@ const NAV = [
   { to: '/', label: 'Dashboard', icon: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    </svg>
+  )},
+  { to: '/products', label: 'Products', icon: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 3H8M12 12v4" />
     </svg>
   )},
   { to: '/invoice', label: 'Quotation', icon: (
@@ -118,6 +124,7 @@ const App = () => (
         <Route path="/" element={<Dashboard />} />
         <Route path="/new" element={<NewInvoice />} />
         <Route path="/edit/:id" element={<EditInvoice />} />
+        <Route path="/products" element={<Products />} />
         <Route path="/invoice" element={<GstInvoiceSplitView />} />
         <Route path="/invoice/:id" element={<GstInvoiceSplitView />} />
         <Route path="/proforma" element={<InvoiceSplitView />} />
