@@ -229,11 +229,17 @@ export default function InvoiceSplitView({ initialData }) {
 
   const consignee = data.sameAsBuyer ? data.buyer : data.consignee;
   const unitLabel = data.items[0]?.unit || "";
+  const [mobileTab, setMobileTab] = useState('form');
 
   return (
-    <div className="flex h-screen w-full flex-row bg-zinc-100">
+    <div className="flex flex-col md:flex-row h-full w-full bg-zinc-100">
+      {/* Mobile tab switcher */}
+      <div className="md:hidden flex border-b border-zinc-200 bg-white shrink-0">
+        <button onClick={() => setMobileTab('form')} className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${mobileTab === 'form' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-zinc-500'}`}>Form</button>
+        <button onClick={() => setMobileTab('preview')} className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${mobileTab === 'preview' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-zinc-500'}`}>Preview</button>
+      </div>
       {/* LEFT: FORM */}
-      <div id="form-panel" className="h-full w-[42%] min-w-[340px] shrink-0 overflow-y-auto border-r border-zinc-200 bg-zinc-50 p-4">
+      <div id="form-panel" className={`${mobileTab === 'form' ? 'flex' : 'hidden'} md:flex flex-col h-full md:w-[42%] md:min-w-[340px] shrink-0 overflow-y-auto border-r border-zinc-200 bg-zinc-50 p-4`}>
         <div className="mx-auto flex max-w-2xl flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -378,7 +384,7 @@ export default function InvoiceSplitView({ initialData }) {
       </div>
 
       {/* RIGHT: LIVE PREVIEW */}
-      <div ref={paneRef} id="preview-panel" className="h-full min-w-0 flex-1 overflow-auto bg-zinc-200 p-4">
+      <div ref={paneRef} id="preview-panel" className={`${mobileTab === 'preview' ? 'flex' : 'hidden'} md:flex flex-col h-full min-w-0 flex-1 overflow-auto bg-zinc-200 p-4`}>
         <div
           id="invoice-sheet"
           style={{ "--z": scale }}
