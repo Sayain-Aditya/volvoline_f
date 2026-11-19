@@ -49,18 +49,21 @@ const Dashboard = () => {
   const [invoices, setInvoices] = useState([]);
   const [proformas, setProformas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [viewId, setViewId] = useState(null);
 
   useEffect(() => { refresh(); }, []);
 
   const refresh = async () => {
     setLoading(true);
+    setError('');
     try {
       const [inv, pro] = await Promise.all([getInvoices(), getProformas()]);
       setInvoices(inv);
       setProformas(pro);
-    } catch (e) { alert(e.message); }
-    finally { setLoading(false); }
+    } catch (e) {
+      setError(e.message || 'Failed to connect to server.');
+    } finally { setLoading(false); }
   };
 
   const handleDelete = async (id) => {
@@ -79,6 +82,14 @@ const Dashboard = () => {
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
       {viewId && <ProformaViewModal id={viewId} onClose={() => setViewId(null)} />}
+
+      {error && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <span>{error}</span>
+          <button onClick={refresh} className="ml-auto font-semibold underline hover:no-underline">Retry</button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
