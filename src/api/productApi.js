@@ -16,3 +16,4 @@ export const getProducts = (q = '') => request(`/api/products${q ? `?q=${encodeU
 export const createProduct = (data) => request('/api/products', { method: 'POST', body: JSON.stringify(data) });
 export const updateProduct = (id, data) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteProduct = (id) => request(`/api/products/${id}`, { method: 'DELETE' });
+export const bulkImportProducts = (rows) => request('/api/products/bulk-import', { method: 'POST', body: JSON.stringify(rows) });

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../api/productApi';
+import { useEffect, useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { getProducts, createProduct, updateProduct, deleteProduct, bulkImportProducts } from '../api/productApi';
 
 const empty = { name: '', hsn: '', unit: 'NOS', rate: '', desc: '' };
 
@@ -11,6 +12,8 @@ export default function Products() {
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null); // null | { mode: 'add'|'edit', data }
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importRef = useRef(null);
   const [form, setForm] = useState(empty);
   const [error, setError] = useState('');
 
@@ -50,8 +53,30 @@ export default function Products() {
     i.hsn?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImporting(true); setError('');
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const mapped = rows.map((r) => ({
+        name: String(r['Item Name'] || r['name'] || '').trim(),
+        hsn: String(r['HSN Code'] || r['hsn'] || '').trim(),
+      })).filter((r) => r.name);
+      if (mapped.length === 0) { setError('No valid rows found. Columns must be: Item Name, HSN Code'); return; }
+      const res = await bulkImportProducts(mapped);
+      load();
+      setError('');
+      alert(`✅ Imported ${res.inserted} products successfully.`);
+    } catch (e) { setError(e.message); }
+    finally { setImporting(false); e.target.value = ''; }
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6">
+    <div className="min-h-full bg-gray-50 p-4 md:p-6">
       {error && (
         <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">
           <span>{error}</span>
@@ -64,10 +89,21 @@ export default function Products() {
           <h1 className="text-2xl font-bold text-gray-900">Product Catalogue</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage items to use in quotations</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-          Add Product
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportExcel} className="hidden" />
+          <button
+            onClick={() => importRef.current.click()}
+            disabled={importing}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+            {importing ? 'Importing…' : 'Import Excel'}
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* Search */}

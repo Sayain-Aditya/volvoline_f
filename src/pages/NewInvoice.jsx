@@ -1,5 +1,5 @@
-import InvoiceSplitView from '../components/proforma/InvoiceSplitView';
+import GstInvoiceSplitView from '../components/invoice/InvoiceSplitView';
 
-const NewInvoice = () => <InvoiceSplitView />;
+const NewInvoice = () => <GstInvoiceSplitView />;
 
 export default NewInvoice;
